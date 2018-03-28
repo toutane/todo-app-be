@@ -29,4 +29,4 @@ module.exports = [
     project_icon:"fa fa-eye fa-fw text-primary",
     project_url:"/towatch",
   }
-]
+];
