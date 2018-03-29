@@ -2,8 +2,15 @@ let projects = require("./db/default-projects");
 let tasks = require("./db/default-tasks");
 const cors = require("cors");
 const express = require("express");
+const mongoose = require('mongoose');
+const keys = require('./config/keys');
 const bodyParser = require("body-parser");
 const app = express();
+
+// connect to mongodb
+mongoose.connect(keys.mongodb.dbURI, () => {
+  console.log('connected to mongodb');
+});
 
 app.use(cors());
 
@@ -11,7 +18,7 @@ app.get("/", (req, res) => {
   res.send("👨🏻‍💻BE <---> todo-app");
 });
 
-//  <- projects api ->
+// projects api 
 
 app.get("/projects", (req, res) => {
   res.append("Content-Type", "application/json");
@@ -31,7 +38,7 @@ app.delete("/projects", bodyParser.json(), (req, res) => {
   // res.send(projects)
 });
 
-// <- tasks api ->
+// tasks api
 
 app.get("/tasks", (req, res) => {
   res.append("Content-Type", "application/json");
