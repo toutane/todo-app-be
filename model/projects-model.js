@@ -8,6 +8,6 @@ const projectsSchema = new Schema({
   project_url: String,
 });
 
-const Projects = mongoose.model('projects', projectsSchema);
+const Projects = mongoose.model('project', projectsSchema);
 
 module.exports = Projects;

@@ -1,5 +1,6 @@
-let projects = require("./db/default-projects");
+// let projects = require("./db/default-projects");
 // let tasks = require("./db/default-tasks");
+const Projects = require("./model/projects-model");
 const Tasks = require("./model/tasks-model");
 const cors = require("cors");
 const express = require("express");
@@ -23,19 +24,46 @@ app.get("/", (req, res) => {
 
 app.get("/projects", (req, res) => {
   res.append("Content-Type", "application/json");
-  res.send(projects);
+  Projects.find({}).then(data => {
+    console.log(data);
+    res.send(data);
+  });
 });
 
 app.post("/projects", bodyParser.json(), (req, res) => {
-  projects = [...projects, req.body];
-  // projects.push(req.body);
-  console.log(projects);
-  res.send(req.body);
-});
+  Projects.findOne({ "project_name": req.body.projects_name }).then(currentProject => {
+    console.log(currentProject);
+    if (currentProject) {
+      console.log("error project already exist: ", currentProject.project_name);
+      res.status(208).send({
+        error: true,
+        message: `Project "${currentProject.project_name}" already exist`,
+      });
+    } else {
+      new Projects(req.body)
+        .save((err, newProject) => {
+          if (err) { return err }
+          console.log("created new project: ", newProject);
+          res.status(201).send({
+            error: false,
+            message: `Project "${newProject.project_name}" succesfully created`,
+          });          
+        });
+      }
+    });
+  });
 
 app.delete("/projects", bodyParser.json(), (req, res) => {
-  projects = projects.filter(e => e.project_name !== req.body.project_name);
-  res.send(req.body.project_name);
+  console.log({ "project_name": req.body.project_name });
+  Projects.findOneAndRemove({ "project_name": req.body.project_name }, (err, project) => {  
+    if (err) return res.status(500).send(err);
+    // Tasks.remove( {task_id: task._id} );
+    const response = {
+        message: "Project successfully deleted",
+        project
+    };
+    return res.status(200).send(response);
+});
   // res.send(projects)
 });
 
@@ -74,8 +102,16 @@ app.post("/tasks", bodyParser.json(), (req, res) => {
 });
 
 app.delete("/tasks", bodyParser.json(), (req, res) => {
-  tasks = tasks.filter((e, i) => i !== req.body.id);
-  res.send(req.body.tasks_title);
+  console.log({ "tasks_id": req.body.id });
+  Tasks.findOneAndRemove({ "tasks_id": req.body.id }, (err, task) => {  
+    if (err) return res.status(500).send(err);
+    // Tasks.remove( {task_id: task._id} );
+    const response = {
+        message: "Task successfully deleted",
+        task
+    };
+    return res.status(200).send(response);
+});
 });
 
 app.listen(3001, () => {
