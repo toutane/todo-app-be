@@ -7,7 +7,16 @@ const express = require("express");
 const mongoose = require("mongoose");
 const keys = require("./config/keys");
 const bodyParser = require("body-parser");
+const shortid = require("shortid-36");
+const cookieParser = require("cookie-parser");
+const session = require("cookie-session");
+
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
+
 const app = express();
+
+const Users = require("./model/users-model");
 
 // connect to mongodb
 mongoose.connect(keys.mongodb.dbURI, () => {
@@ -15,14 +24,62 @@ mongoose.connect(keys.mongodb.dbURI, () => {
 });
 
 app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(session({ keys: ["secretkey1", "secretkey2", "..."] }));
+
+// Configure passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
+// authentication
+
+// use static authenticate method of model in LocalStrategy
+passport.use(new LocalStrategy(Users.authenticate()));
+
+// use static serialize and deserialize of model for passport session support
+passport.serializeUser(Users.serializeUser());
+passport.deserializeUser(Users.deserializeUser());
 
 app.get("/", (req, res) => {
   res.send("👨🏻‍💻BE <---> todo-app");
 });
 
+// user register
+
+app.post('/register', function(req, res, next) {
+  console.log('registering user');
+  Users.register(new Users({username: req.body.username, user_id: shortid.generate()}), req.body.password, function(err, data) {
+    if (err) {
+      console.log('error while user register!', err);
+      return next(err);
+    }
+    console.log('user registered!');
+    res.send(`user register: ${data}`)
+    // res.redirect('/');
+  });
+});
+
+// user login
+
+app.post('/login', passport.authenticate('local'), function(req, res) {
+  // res.redirect('/');
+  console.log(`user ${req.user.username} successfully log`)
+  res.send(req.user);
+});
+
+// user logout
+
+app.get('/logout', function(req, res) {
+  req.logout();
+  res.redirect('/');
+});
+
 // projects api
 
 app.get("/projects", (req, res) => {
+  // console.log(req.user.username)
   res.append("Content-Type", "application/json");
   Projects.find({}).then(data => {
     console.log(data);
@@ -31,39 +88,48 @@ app.get("/projects", (req, res) => {
 });
 
 app.post("/projects", bodyParser.json(), (req, res) => {
-  Projects.findOne({ "project_name": req.body.projects_name }).then(currentProject => {
-    console.log(currentProject);
-    if (currentProject) {
-      console.log("error project already exist: ", currentProject.project_name);
-      res.status(208).send({
-        error: true,
-        message: `Project "${currentProject.project_name}" already exist`,
-      });
-    } else {
-      new Projects(req.body)
-        .save((err, newProject) => {
-          if (err) { return err }
+  Projects.findOne({ project_name: req.body.projects_name }).then(
+    currentProject => {
+      console.log(currentProject);
+      if (currentProject) {
+        console.log(
+          "error project already exist: ",
+          currentProject.project_name
+        );
+        res.status(208).send({
+          error: true,
+          message: `Project "${currentProject.project_name}" already exist`
+        });
+      } else {
+        new Projects(req.body).save((err, newProject) => {
+          if (err) {
+            return err;
+          }
           console.log("created new project: ", newProject);
           res.status(201).send({
             error: false,
-            message: `Project "${newProject.project_name}" succesfully created`,
-          });          
+            message: `Project "${newProject.project_name}" succesfully created`
+          });
         });
       }
-    });
-  });
+    }
+  );
+});
 
 app.delete("/projects", bodyParser.json(), (req, res) => {
-  console.log({ "project_name": req.body.project_name });
-  Projects.findOneAndRemove({ "project_name": req.body.project_name }, (err, project) => {  
-    if (err) return res.status(500).send(err);
-    // Tasks.remove( {task_id: task._id} );
-    const response = {
+  console.log({ project_name: req.body.project_name });
+  Projects.findOneAndRemove(
+    { project_name: req.body.project_name },
+    (err, project) => {
+      if (err) return res.status(500).send(err);
+      // Tasks.remove( {task_id: task._id} );
+      const response = {
         message: "Project successfully deleted",
         project
-    };
-    return res.status(200).send(response);
-});
+      };
+      return res.status(200).send(response);
+    }
+  );
   // res.send(projects)
 });
 
@@ -78,40 +144,41 @@ app.get("/tasks", (req, res) => {
 });
 
 app.post("/tasks", bodyParser.json(), (req, res) => {
-  Tasks.findOne({ "tasks_title": req.body.tasks_title }).then(currentTask => {
+  Tasks.findOne({ tasks_title: req.body.tasks_title }).then(currentTask => {
     console.log(currentTask);
     if (currentTask) {
       console.log("error task already exist: ", currentTask.tasks_title);
       res.status(208).send({
         error: true,
-        message: `Task "${currentTask.tasks_title}" already exist`,
+        message: `Task "${currentTask.tasks_title}" already exist`
       });
     } else {
-      new Tasks(req.body)
-        .save((err, newTask) => {
-          if (err) { return err }
-          console.log("created new task: ", newTask);
-          res.status(201).send({
-            error: false,
-            message: `Task "${newTask.tasks_title}" succesfully created`,
-          });          
+      new Tasks(req.body).save((err, newTask) => {
+        if (err) {
+          return err;
+        }
+        console.log("created new task: ", newTask);
+        res.status(201).send({
+          error: false,
+          message: `Task "${newTask.tasks_title}" succesfully created`
         });
-        // .then();
+      });
+      // .then();
     }
   });
 });
 
 app.delete("/tasks", bodyParser.json(), (req, res) => {
-  console.log({ "tasks_id": req.body.id });
-  Tasks.findOneAndRemove({ "tasks_id": req.body.id }, (err, task) => {  
+  console.log({ tasks_id: req.body.id });
+  Tasks.findOneAndRemove({ tasks_id: req.body.id }, (err, task) => {
     if (err) return res.status(500).send(err);
     // Tasks.remove( {task_id: task._id} );
     const response = {
-        message: "Task successfully deleted",
-        task
+      message: "Task successfully deleted",
+      task
     };
     return res.status(200).send(response);
-});
+  });
 });
 
 app.listen(3001, () => {

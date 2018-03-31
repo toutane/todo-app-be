@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const tasksSchema = new Schema({
+    user_id: String,
     tasks_id: Number,
     tasks_title: String,
     tasks_description: String,
