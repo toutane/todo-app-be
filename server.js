@@ -18,6 +18,7 @@ const app = express();
 
 const Users = require("./model/users-model");
 
+// CORS options
 const corsOptions = {
   origin: [
     'http://localhost:3000',
@@ -71,7 +72,7 @@ app.post('/register', function(req, res, next) {
 // user login
 
 app.post('/login', passport.authenticate('local'), function(req, res) {
-  res.redirect('/');  
+  res.redirect('/');
   console.log(`user ${req.user.username} successfully log`)
   res.send(req.user);
 });
