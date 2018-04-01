@@ -10,14 +10,12 @@ const bodyParser = require("body-parser");
 const shortid = require("shortid-36");
 const cookieParser = require("cookie-parser");
 const expressSession = require("express-session");
-// const cookieSession = require("cookie-session");
-
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+const connectEnsureLogin = require("connect-ensure-login");
 
 
 const Users = require("./model/users-model");
-// const db = require("./model/users");
 
 // CORS options
 const corsOptions = {
@@ -26,35 +24,12 @@ const corsOptions = {
     'http://localhost:3000',
     'http://192.168.1.47:3000'
   ],
-  // optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 }
 
 // connect to mongodb
 mongoose.connect(keys.mongodb.dbURI, () => {
   console.log("connected to mongodb");
 });
-
-// passport.use(
-//   new LocalStrategy(function(username, password, done) {
-//     db.findByUsername(username, function(err, user) {
-//       if (err) { return done(err); }
-//       if (!user) { return done(null, false); }
-//       if (user.password != password) { return done(null, false); }
-//       return done(null, user);
-//     });
-//   })
-// );
-// passport.serializeUser(function(user, done) {
-//   done(null, user.id);
-// });
-// passport.deserializeUser(function(id, done) {
-//   db.findById(id, function(err, user) {
-//     if (err) {
-//       return done(err);
-//     }
-//     done(null, user);
-//   });
-// });
 
 passport.use(new LocalStrategy(Users.authenticate()));
 passport.serializeUser(Users.serializeUser());
@@ -68,7 +43,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(expressSession(
   {
-  secret: 'keyboard cat',
+  secret: 'carlos',
   resave: false,
   saveUninitialized: false,
   cookie: { secure: false }
@@ -106,12 +81,19 @@ app.post('/login', passport.authenticate('local'), function(req, res) {
 
 // user logout
 app.get('/logout', function(req, res) {
-  console.log("/logout req.cookie: ", req.cookie);
+  console.log("GET /logout req.user.user_id ", req.user.user_id);
+  const username = req.user.username;
   req.logout();
+  res.send({
+    message: "User disconnected",
+    user: username,
+  });
 });
 
 // projects api
-app.get("/projects", (req, res) => {
+app.get("/projects",
+  connectEnsureLogin.ensureLoggedIn(),
+  (req, res) => {
   console.log("GET /projects user_id: ", req.user.user_id);
   res.append("Content-Type", "application/json");
   Projects.find({ user_id: req.user.user_id }).then(data => {
