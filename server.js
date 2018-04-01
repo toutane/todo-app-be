@@ -78,6 +78,10 @@ app.post('/register', function(req, res, next) {
 // user login
 
 app.post('/login', passport.authenticate('local'), function(req, res) {
+<<<<<<< HEAD
+=======
+  // res.redirect('/');
+>>>>>>> 53e867065bc26efe8734c7f65d3982e1f1bdfa19
   console.log(`user ${req.user.username} successfully log`)
   res.send(req.user);
 });
