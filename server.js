@@ -9,14 +9,15 @@ const keys = require("./config/keys");
 const bodyParser = require("body-parser");
 const shortid = require("shortid-36");
 const cookieParser = require("cookie-parser");
-const cookieSession = require("cookie-session");
+const expressSession = require("express-session");
+// const cookieSession = require("cookie-session");
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 
-const app = express();
 
 const Users = require("./model/users-model");
+// const db = require("./model/users");
 
 // CORS options
 const corsOptions = {
@@ -25,7 +26,7 @@ const corsOptions = {
     'http://localhost:3000',
     'http://192.168.1.47:3000'
   ],
-  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+  // optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 }
 
 // connect to mongodb
@@ -33,30 +34,52 @@ mongoose.connect(keys.mongodb.dbURI, () => {
   console.log("connected to mongodb");
 });
 
+// passport.use(
+//   new LocalStrategy(function(username, password, done) {
+//     db.findByUsername(username, function(err, user) {
+//       if (err) { return done(err); }
+//       if (!user) { return done(null, false); }
+//       if (user.password != password) { return done(null, false); }
+//       return done(null, user);
+//     });
+//   })
+// );
+// passport.serializeUser(function(user, done) {
+//   done(null, user.id);
+// });
+// passport.deserializeUser(function(id, done) {
+//   db.findById(id, function(err, user) {
+//     if (err) {
+//       return done(err);
+//     }
+//     done(null, user);
+//   });
+// });
+
+passport.use(new LocalStrategy(Users.authenticate()));
+passport.serializeUser(Users.serializeUser());
+passport.deserializeUser(Users.deserializeUser());
+
+const app = express();
+
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(cookieSession({
-  name: 'carlos',
-  keys: ["carlos"],
-  // Cookie Options
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}));
-
+app.use(expressSession(
+  {
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }
+}
+));
 // Configure passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
-// authentication
 
-// use static authenticate method of model in LocalStrategy
-passport.use(new LocalStrategy(Users.authenticate()));
-
-// use static serialize and deserialize of model for passport session support
-passport.serializeUser(Users.serializeUser());
-passport.deserializeUser(Users.deserializeUser());
-
+// API routes
 app.get("/", (req, res) => {
   res.send("todo-app-be");
 });
@@ -76,41 +99,28 @@ app.post('/register', function(req, res, next) {
 });
 
 // user login
-
 app.post('/login', passport.authenticate('local'), function(req, res) {
-  // res.redirect('/');
   console.log(`user ${req.user.username} successfully log`)
   res.send(req.user);
 });
 
 // user logout
-
 app.get('/logout', function(req, res) {
-  // console.log("/logout req.user: ", req.user);
   console.log("/logout req.cookie: ", req.cookie);
   req.logout();
 });
 
 // projects api
-
 app.get("/projects", (req, res) => {
-  // console.log(req.user.username)
+  console.log("GET /projects user_id: ", req.user.user_id);
   res.append("Content-Type", "application/json");
-  Projects.find({}).then(data => {
-    // console.log(data);
+  Projects.find({ user_id: req.user.user_id }).then(data => {
     res.send(data);
   });
 });
 
 app.post("/projects", bodyParser.json(), (req, res) => {
-  console.log("/projects req: ", req);
-  // console.log("/projects req.user: ", req.user);
-  console.log("/projects req.cookies: ", req.cookies);
-  console.log("/projects req.sessionKey: ", req.sessionKey);
-  console.log("/projects req.session: ", req.session);
-  // if (!req.user) {
-  //   res.send({})
-  // }
+  console.log("POST /projects user_id: ", req.user.user_id);
   Projects.findOne({ project_name: req.body.projects_name }).then(
     currentProject => {
       console.log(currentProject);
@@ -124,8 +134,8 @@ app.post("/projects", bodyParser.json(), (req, res) => {
           message: `Project "${currentProject.project_name}" already exist`
         });
       } else {
-        // const project = Object.assign({}, req.body, {user_id: req.user.user_id })
-        new Projects( req.body ).save((err, newProject) => {
+        const project = Object.assign({}, req.body, { user_id: req.user.user_id })
+        new Projects( project ).save((err, newProject) => {
           if (err) {
             return err;
           }
@@ -141,7 +151,6 @@ app.post("/projects", bodyParser.json(), (req, res) => {
 });
 
 app.delete("/projects", bodyParser.json(), (req, res) => {
-  // console.log({ project_name: req.body.project_name });
   Projects.findOneAndRemove(
     { project_name: req.body.project_name },
     (err, project) => {
@@ -154,15 +163,12 @@ app.delete("/projects", bodyParser.json(), (req, res) => {
       return res.status(200).send(response);
     }
   );
-  // res.send(projects)
 });
 
 // tasks api
-
 app.get("/tasks", (req, res) => {
   res.append("Content-Type", "application/json");
   Tasks.find({}).then(data => {
-    // console.log(data);
     res.send(data);
   });
 });
@@ -193,7 +199,6 @@ app.post("/tasks", bodyParser.json(), (req, res) => {
 });
 
 app.delete("/tasks", bodyParser.json(), (req, res) => {
-  // console.log({ tasks_id: req.body.id });
   Tasks.findOneAndRemove({ tasks_id: req.body.id }, (err, task) => {
     if (err) return res.status(500).send(err);
     // Tasks.remove( {task_id: task._id} );
