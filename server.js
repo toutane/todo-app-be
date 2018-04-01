@@ -9,7 +9,7 @@ const keys = require("./config/keys");
 const bodyParser = require("body-parser");
 const shortid = require("shortid-36");
 const cookieParser = require("cookie-parser");
-const session = require("cookie-session");
+const cookieSession = require("cookie-session");
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
@@ -20,6 +20,7 @@ const Users = require("./model/users-model");
 
 // CORS options
 const corsOptions = {
+  credentials: true,
   origin: [
     'http://localhost:3000',
     'http://192.168.1.47:3000'
@@ -36,7 +37,12 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(session({ keys: ["secretkey1", "secretkey2", "..."] }));
+app.use(cookieSession({
+  name: 'carlos',
+  keys: ["carlos"],
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 
 // Configure passport middleware
 app.use(passport.initialize());
@@ -72,7 +78,6 @@ app.post('/register', function(req, res, next) {
 // user login
 
 app.post('/login', passport.authenticate('local'), function(req, res) {
-  res.redirect('/');
   console.log(`user ${req.user.username} successfully log`)
   res.send(req.user);
 });
@@ -80,8 +85,9 @@ app.post('/login', passport.authenticate('local'), function(req, res) {
 // user logout
 
 app.get('/logout', function(req, res) {
+  // console.log("/logout req.user: ", req.user);
+  console.log("/logout req.cookie: ", req.cookie);
   req.logout();
-  res.redirect('/');
 });
 
 // projects api
@@ -90,16 +96,20 @@ app.get("/projects", (req, res) => {
   // console.log(req.user.username)
   res.append("Content-Type", "application/json");
   Projects.find({}).then(data => {
-    console.log(data);
+    // console.log(data);
     res.send(data);
   });
 });
 
 app.post("/projects", bodyParser.json(), (req, res) => {
-  console.log("req.user: ", req.user);
-  if (!req.user) {
-    res.send({})
-  }
+  console.log("/projects req: ", req);
+  // console.log("/projects req.user: ", req.user);
+  console.log("/projects req.cookies: ", req.cookies);
+  console.log("/projects req.sessionKey: ", req.sessionKey);
+  console.log("/projects req.session: ", req.session);
+  // if (!req.user) {
+  //   res.send({})
+  // }
   Projects.findOne({ project_name: req.body.projects_name }).then(
     currentProject => {
       console.log(currentProject);
@@ -113,8 +123,8 @@ app.post("/projects", bodyParser.json(), (req, res) => {
           message: `Project "${currentProject.project_name}" already exist`
         });
       } else {
-        const project = Object.assign({}, req.body, {user_id: req.user.user_id })
-        new Projects( project ).save((err, newProject) => {
+        // const project = Object.assign({}, req.body, {user_id: req.user.user_id })
+        new Projects( req.body ).save((err, newProject) => {
           if (err) {
             return err;
           }
@@ -130,7 +140,7 @@ app.post("/projects", bodyParser.json(), (req, res) => {
 });
 
 app.delete("/projects", bodyParser.json(), (req, res) => {
-  console.log({ project_name: req.body.project_name });
+  // console.log({ project_name: req.body.project_name });
   Projects.findOneAndRemove(
     { project_name: req.body.project_name },
     (err, project) => {
@@ -151,7 +161,7 @@ app.delete("/projects", bodyParser.json(), (req, res) => {
 app.get("/tasks", (req, res) => {
   res.append("Content-Type", "application/json");
   Tasks.find({}).then(data => {
-    console.log(data);
+    // console.log(data);
     res.send(data);
   });
 });
@@ -182,7 +192,7 @@ app.post("/tasks", bodyParser.json(), (req, res) => {
 });
 
 app.delete("/tasks", bodyParser.json(), (req, res) => {
-  console.log({ tasks_id: req.body.id });
+  // console.log({ tasks_id: req.body.id });
   Tasks.findOneAndRemove({ tasks_id: req.body.id }, (err, task) => {
     if (err) return res.status(500).send(err);
     // Tasks.remove( {task_id: task._id} );
