@@ -18,12 +18,20 @@ const app = express();
 
 const Users = require("./model/users-model");
 
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://192.168.1.47:3000'
+  ],
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
+
 // connect to mongodb
 mongoose.connect(keys.mongodb.dbURI, () => {
   console.log("connected to mongodb");
 });
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -43,28 +51,27 @@ passport.serializeUser(Users.serializeUser());
 passport.deserializeUser(Users.deserializeUser());
 
 app.get("/", (req, res) => {
-  res.send("👨🏻‍💻BE <---> todo-app");
+  res.send("todo-app-be");
 });
 
 // user register
 
 app.post('/register', function(req, res, next) {
   console.log('registering user');
-  Users.register(new Users({username: req.body.username, user_id: shortid.generate()}), req.body.password, function(err, data) {
+  Users.register(new Users({username: req.body.username, email: req.body.email, full_name: req.body.full_name, user_id: shortid.generate()}), req.body.password, function(err, data) {
     if (err) {
       console.log('error while user register!', err);
       return next(err);
     }
     console.log('user registered!');
-    res.send(`user register: ${data}`)
-    // res.redirect('/');
+    res.send({"user register: ": data.username});
   });
 });
 
 // user login
 
 app.post('/login', passport.authenticate('local'), function(req, res) {
-  // res.redirect('/');
+  res.redirect('/');  
   console.log(`user ${req.user.username} successfully log`)
   res.send(req.user);
 });
@@ -88,6 +95,10 @@ app.get("/projects", (req, res) => {
 });
 
 app.post("/projects", bodyParser.json(), (req, res) => {
+  console.log("req.user: ", req.user);
+  if (!req.user) {
+    res.send({})
+  }
   Projects.findOne({ project_name: req.body.projects_name }).then(
     currentProject => {
       console.log(currentProject);
@@ -101,7 +112,8 @@ app.post("/projects", bodyParser.json(), (req, res) => {
           message: `Project "${currentProject.project_name}" already exist`
         });
       } else {
-        new Projects(req.body).save((err, newProject) => {
+        const project = Object.assign({}, req.body, {user_id: req.user.user_id })
+        new Projects( project ).save((err, newProject) => {
           if (err) {
             return err;
           }
