@@ -20,6 +20,7 @@ const Users = require("./model/users-model");
 
 // CORS options
 const corsOptions = {
+  credentials: true,
   origin: [
     'http://localhost:3000',
     'http://192.168.1.47:3000'
@@ -80,6 +81,7 @@ app.post('/login', passport.authenticate('local'), function(req, res) {
 // user logout
 
 app.get('/logout', function(req, res) {
+  console.log(req.user)
   req.logout();
   res.redirect('/');
 });
