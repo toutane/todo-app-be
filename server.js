@@ -63,7 +63,7 @@ app.get("/", (req, res) => {
 
 app.post('/register', function(req, res, next) {
   console.log('registering user');
-  Users.register(new Users({username: req.body.username, email: req.body.email, full_name: req.body.full_name, user_id: shortid.generate()}), req.body.password, function(err, data) {
+  Users.register(new Users({username: req.body.username, email: req.body.email, full_name: req.body.full_name, join_date: req.body.join_date, user_id: shortid.generate()}), req.body.password, function(err, data) {
     if (err) {
       console.log('error while user register!', err);
       return next(err);
@@ -87,6 +87,18 @@ app.get('/logout', function(req, res) {
   res.send({
     message: "User disconnected",
     user: username,
+  });
+});
+
+// user api
+
+app.get("/user",
+  connectEnsureLogin.ensureLoggedIn(),
+  (req, res) => {
+  console.log("GET /user user_id: ", req.user.user_id);
+  res.append("Content-Type", "application/json");
+  Users.find({ user_id: req.user.user_id }).then(data => {
+    res.send(data);
   });
 });
 
