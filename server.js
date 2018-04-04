@@ -218,7 +218,7 @@ app.delete("/tasks", bodyParser.json(), (req, res) => {
 app.use(function(err, req, res, next) {
   console.error(err.message);
   res.status(err.status || 500);
-  res.send(Object.assign({}, err, {error : true});
+  res.send(Object.assign({}, err, {error : true}));
 });
 
 app.listen(3001, () => {
