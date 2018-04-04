@@ -50,6 +50,7 @@ app.use(expressSession(
 }
 ));
 // Configure passport middleware
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -95,14 +96,24 @@ app.get('/logout', function(req, res) {
 app.get("/user",
   connectEnsureLogin.ensureLoggedIn(),
   (req, res) => {
-  console.log("GET /user user_id: ", req.user.user_id);
+  // console.log("GET /user user_id: ", req.user.user_id);
   res.append("Content-Type", "application/json");
   Users.find({ user_id: req.user.user_id }).then(data => {
     res.send(data);
   });
 });
 
+// app.put("/user", bodyParser.json(), (req, res) => {
+//   Users.updateOne(
+//     { user_id: req.user.user_id },
+//     { $set: { full_name: req.body.full_name}}.then(x => {
+//       res.send("user profile update")
+//     })
+//   )
+// });
+
 // projects api
+
 app.get("/projects",
   connectEnsureLogin.ensureLoggedIn(),
   (req, res) => {
