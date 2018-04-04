@@ -74,10 +74,21 @@ app.post('/register', function(req, res, next) {
 });
 
 // user login
-app.post('/login', passport.authenticate('local'), function(req, res) {
-  console.log(`user ${req.user.username} successfully log`)
-  res.send(req.user);
-});
+app.post('/login',
+  passport.authenticate('local',
+  function(err, user, info) {
+    if (err) { return next(err); }
+    if (!user) { return res.redirect('/login'); }
+    // req.logIn(user, function(err) {
+    //   if (err) { return next(err); }
+    //   return res.redirect('/users/' + user.username);
+  }),
+  function(req, res, next) {
+    // console.log(err);
+    console.log(`user ${req.user.username} successfully log`)
+    res.send(req.user);
+  }
+);
 
 // user logout
 app.get('/logout', function(req, res) {
@@ -207,7 +218,7 @@ app.delete("/tasks", bodyParser.json(), (req, res) => {
 app.use(function(err, req, res, next) {
   console.error(err.message);
   res.status(err.status || 500);
-  res.send(err);
+  res.send(Object.assign({}, err, {error : true});
 });
 
 app.listen(3001, () => {
