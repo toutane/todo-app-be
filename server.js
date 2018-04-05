@@ -74,9 +74,31 @@ app.post('/register', function(req, res, next) {
 });
 
 // user login
-app.post('/login', passport.authenticate('local'), function(req, res) {
-  console.log(`user ${req.user.username} successfully log`)
-  res.send(req.user);
+// app.post('/login',
+//   passport.authenticate('local',
+//   function(err, user, info) {
+//     if (err) { return next(err); }
+//     if (!user) { return res.redirect('/login'); }
+//     // req.logIn(user, function(err) {
+//     //   if (err) { return next(err); }
+//     //   return res.redirect('/users/' + user.username);
+//   }),
+//   function(req, res, next) {
+//     // console.log(err);
+//     console.log(`user ${req.user.username} successfully log`)
+//     res.send(req.user);
+//   }
+// );
+
+app.post('/login', function(req, res, next) {
+  passport.authenticate('local', function(err, user, info) {
+    if (err) { return next(err); }
+    if (!user) { return res.send({ error: true, message: 'user unknow' }); }
+    req.logIn(user, function(err) {
+      if (err) { return next(err); }
+      return res.send({ error: false, message: "user logged in", user: req.user.username });
+    });
+  })(req, res, next);
 });
 
 // user logout
@@ -91,9 +113,8 @@ app.get('/logout', function(req, res) {
 });
 
 // user api
-
 app.get("/user",
-  connectEnsureLogin.ensureLoggedIn(),
+  // connectEnsureLogin.ensureLoggedIn(),
   (req, res) => {
   console.log("GET /user user_id: ", req.user.user_id);
   res.append("Content-Type", "application/json");
@@ -104,7 +125,12 @@ app.get("/user",
 
 // projects api
 app.get("/projects",
-  connectEnsureLogin.ensureLoggedIn(),
+  // connectEnsureLogin.ensureLoggedIn(),
+  (req, res, next) =>
+    !req.user
+    ? res.status(405).send({error: true, message: 'not logged'})
+    : next(),
+
   (req, res) => {
   console.log("GET /projects user_id: ", req.user.user_id);
   res.append("Content-Type", "application/json");
@@ -202,6 +228,12 @@ app.delete("/tasks", bodyParser.json(), (req, res) => {
     };
     return res.status(200).send(response);
   });
+});
+
+app.use(function(err, req, res, next) {
+  console.error(err.message);
+  res.status(err.status || 500);
+  res.send(Object.assign({}, err, {error : true}));
 });
 
 app.listen(3001, () => {
