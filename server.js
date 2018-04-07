@@ -165,7 +165,7 @@ app.post("/projects", bodyParser.json(), (req, res) => {
           message: `Project "${currentProject.project_name}" already exist`
         });
       } else {
-        const project = Object.assign({}, req.body, { user_id: req.user.user_id })
+        const project = Object.assign({}, req.body, { user_id: req.user.user_id, project_id: shortid.generate() })
         new Projects( project ).save((err, newProject) => {
           if (err) {
             return err;
@@ -197,9 +197,9 @@ app.delete("/projects", bodyParser.json(), (req, res) => {
 });
 
 // tasks api
-app.get("/tasks", (req, res) => {
+app.get("/tasks/:project_id", (req, res) => {
   res.append("Content-Type", "application/json");
-  Tasks.find({}).then(data => {
+  Tasks.find({ project_id: req.params.project_id }).then(data => {
     res.send(data);
   });
 });
@@ -214,7 +214,8 @@ app.post("/tasks", bodyParser.json(), (req, res) => {
         message: `Task "${currentTask.tasks_title}" already exist`
       });
     } else {
-      new Tasks(req.body).save((err, newTask) => {
+      const tasks = Object.assign({}, req.body, { project_id: req.body.tasks_project.project_id })      
+      new Tasks( tasks ).save((err, newTask) => {
         if (err) {
           return err;
         }
