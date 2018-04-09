@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 const projectsSchema = new Schema({
   user_id: String,
   project_id: String,
+  project_color: String,
   project_name: String,
   project_icon: String,
   project_url: String,
