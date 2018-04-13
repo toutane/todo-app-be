@@ -22,7 +22,7 @@ const corsOptions = {
   credentials: true,
   origin: [
     'http://localhost:3000',
-    'http://192.168.1.47:3000'
+    'http://192.168.1.47:3000',
   ],
 }
 
@@ -64,7 +64,7 @@ app.get("/", (req, res) => {
 
 app.post('/register', function(req, res, next) {
   console.log('registering user');
-  Users.register(new Users({username: req.body.username, email: req.body.email, full_name: req.body.full_name, join_date: req.body.join_date, user_id: shortid.generate()}), req.body.password, function(err, data) {
+  Users.register(new Users({username: req.body.username, email: req.body.email, full_name: req.body.full_name, join_date: req.body.join_date, avatar: req.body.avatar, user_id: shortid.generate()}), req.body.password, function(err, data) {
     if (err) {
       console.log('error while user register!', err);
       return next(err);
