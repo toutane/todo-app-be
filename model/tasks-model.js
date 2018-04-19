@@ -8,11 +8,13 @@ const tasksSchema = new Schema({
     tasks_title: String,
     tasks_description: String,
     tasks_date: String,
+    tasks_create_date: String,
     tasks_project: String,
     tasks_project_name: String,    
     tasks_project_icon: String,
     tasks_priority: String,
     tasks_tag: String,
+    tasks_img: String,
     tasks_card_color: String,
     tasks_card_icon: String
 });
