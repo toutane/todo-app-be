@@ -12,6 +12,7 @@ const usersSchema = new Schema({
     location: String,
     join_date: String,
     bio: String,
+    globalActivty: String,
 });
 
 usersSchema.plugin(passportLocalMongoose);
