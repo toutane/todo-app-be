@@ -7,6 +7,7 @@ const projectsSchema = new Schema({
   project_color: String,
   project_name: String,
   project_icon: String,
+  project_icon_style: Object,
   project_date: String,
   project_url: String,
 });

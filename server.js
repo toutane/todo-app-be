@@ -179,7 +179,7 @@ app.post("/projects", bodyParser.json(), (req, res) => {
       }
     }
   );
-});
+})
 
 app.delete("/projects", bodyParser.json(), (req, res) => {
   Projects.findOneAndRemove(
@@ -233,7 +233,7 @@ app.post("/tasks", bodyParser.json(), (req, res) => {
 app.delete("/tasks", bodyParser.json(), (req, res) => {
   Tasks.findOneAndRemove({ tasks_id: req.body.id }, (err, task) => {
     if (err) return res.status(500).send(err);
-    // Tasks.remove( {task_id: task._id} );
+    Tasks.remove( {task_id: task._id} );
     const response = {
       message: "Task successfully deleted",
       task
