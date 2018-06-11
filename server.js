@@ -183,7 +183,7 @@ app.post("/projects", bodyParser.json(), (req, res) => {
 
 app.delete("/projects", bodyParser.json(), (req, res) => {
   Projects.findOneAndRemove(
-    { project_name: req.body.project_name },
+    { project_id: req.body.project_id },
     (err, project) => {
       if (err) return res.status(500).send(err);
       // Tasks.remove( {task_id: task._id} );
