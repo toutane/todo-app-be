@@ -196,7 +196,22 @@ app.delete("/projects", bodyParser.json(), (req, res) => {
   );
 });
 
+app.put("/projects/:project_id", bodyParser.json(), (req, res) => {
+  Projects.findByIdAndUpdate( req.params.project_id,
+    { $set: {project_name: req.body.project_name, project_icon: req.body.project_icon}},
+    (err, project) => {
+      if (err) return res.status(500).send(err);
+      const response = {
+        message: "Project successfully updated",
+        project
+      };
+      return res.status(200).send(response);
+    }
+  );
+});
+
 // tasks api
+
 app.get("/tasks/:project_id", (req, res) => {
   res.append("Content-Type", "application/json");
   Tasks.find({ project_id: req.params.project_id }).then(data => {
