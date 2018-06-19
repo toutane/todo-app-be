@@ -198,7 +198,8 @@ app.delete("/projects", bodyParser.json(), (req, res) => {
 
 app.put("/projects/:project_id", bodyParser.json(), (req, res) => {
   Projects.findByIdAndUpdate( req.params.project_id,
-    { $set: {project_name: req.body.project_name, project_icon: req.body.project_icon}},
+    // { $set: {project_name: req.body.project_name, project_icon: req.body.project_icon}},
+    { $set: req.body},
     (err, project) => {
       if (err) return res.status(500).send(err);
       const response = {
@@ -215,7 +216,7 @@ app.put("/projects/:project_id", bodyParser.json(), (req, res) => {
 app.get("/tasks/:project_id", (req, res) => {
   res.append("Content-Type", "application/json");
   Tasks.find({ project_id: req.params.project_id }).then(data => {
-    res.send(data);
+    res.send(data.filter(data => data.tasks_completion === false || data.tasks_completion === undefined));
   });
 });
 
@@ -229,7 +230,7 @@ app.post("/tasks", bodyParser.json(), (req, res) => {
         message: `Task "${currentTask.tasks_title}" already exist`
       });
     } else {
-      const tasks = Object.assign({}, req.body, { project_id: req.body.tasks_project.project_id })      
+      const tasks = Object.assign({}, req.body, { project_id: req.body.tasks_project.project_id, tasks_completion: false })      
       new Tasks( tasks ).save((err, newTask) => {
         if (err) {
           return err;
@@ -243,6 +244,38 @@ app.post("/tasks", bodyParser.json(), (req, res) => {
       // .then();
     }
   });
+});
+
+// Update of tasks
+
+app.put("/tasks/:task_id", bodyParser.json(), (req, res) => {
+  Tasks.findByIdAndUpdate( req.params.task_id,
+    { $set: req.body},
+    (err, task) => {
+      if (err) return res.status(500).send(err);
+      const response = {
+        message: "Task succesfully updated",
+        task
+      };
+      return res.status(200).send(response);
+    }
+  );
+});
+
+// Tasks completion
+
+app.put("/completedTasks/:task_id", bodyParser.json(), (req, res) => {
+  Tasks.findByIdAndUpdate( req.params.task_id,
+    { $set: {tasks_completion: true}},
+    (err, task) => {
+      if (err) return res.status(500).send(err);
+      const response = {
+        message: "Task succesfully completed",
+        task
+      };
+      return res.status(200).send(response);
+    }
+  );
 });
 
 app.delete("/tasks", bodyParser.json(), (req, res) => {

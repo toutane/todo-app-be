@@ -16,7 +16,8 @@ const tasksSchema = new Schema({
     tasks_tag: String,
     tasks_img: String,
     tasks_card_color: String,
-    tasks_card_icon: String
+    tasks_card_icon: String,
+    tasks_completion: Boolean
 });
 
 const Tasks = mongoose.model('task', tasksSchema);
