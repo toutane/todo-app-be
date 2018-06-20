@@ -216,7 +216,7 @@ app.put("/projects/:project_id", bodyParser.json(), (req, res) => {
 app.get("/tasks/:project_id", (req, res) => {
   res.append("Content-Type", "application/json");
   Tasks.find({ project_id: req.params.project_id }).then(data => {
-    res.send(data.filter(data => data.tasks_completion === false || data.tasks_completion === undefined));
+    res.send(data.filter(data => data));
   });
 });
 
